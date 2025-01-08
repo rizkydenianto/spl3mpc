@@ -30,6 +30,5 @@ fn main() -> Result<()> {
             break;
         }
     }
-
     Ok(())
 }
