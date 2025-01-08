@@ -7,28 +7,27 @@ use opencv::{
 };
 
 fn main() -> Result<()> {
-    // Attempt to open the video file
+    // Muat berkas video
     let mut video = VideoCapture::from_file(
         "/home/made/projects/spl3mpc/data_latih/video2.mkv",
         opencv::videoio::CAP_FFMPEG,
-    )?; // Use `?` to propagate errors
+    )?;
     if !video.is_opened()? {
-        panic!("Unable to open the video file!");
+        panic!("Video tidak bisa dimuat!");
     }
 
     loop {
+        // Ambil tiap frame untuk ditampilkan
         let mut frame = Mat::default();
-        // Read a frame from the video
-        if !video.read(&mut frame)? || frame.empty() {
-            break; // Break the loop if no more frames or frame is empty
+        video.read(&mut frame)?;
+        if frame.empty() {
+            break;
         }
-
-        // Display the frame in a window
         highgui::imshow("frame", &frame)?;
 
-        // Add a delay to make the video visible
-        if highgui::wait_key(30)? >= 0 {
-            break; // Exit if a key is pressed
+        // Tambah delay agar gambar dapat ditampilkan
+        if highgui::wait_key(20)? >= 0 {
+            break;
         }
     }
 
