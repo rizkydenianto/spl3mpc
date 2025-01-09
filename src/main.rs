@@ -96,6 +96,5 @@ fn main() -> opencv::Result<()> {
             break; // Exit when the ESC key is pressed
         }
     }
-
     Ok(())
 }
