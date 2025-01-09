@@ -1,12 +1,19 @@
 use opencv::{
-    core::{absdiff, Mat, MatExprTraitConst, Point, Scalar, Size, Vector, BORDER_DEFAULT, CV_8U},
+    core::{
+        absdiff, Mat, MatExprTraitConst, Point, Rect, Scalar, Size, Vector, BORDER_DEFAULT, CV_8U,
+    },
     imgproc::{self, COLOR_BGR2GRAY},
+    video::{
+        create_background_subtractor_mog2, BackgroundSubtractorMOG2Trait,
+    },
     videoio::{VideoCapture, VideoCaptureTrait},
     Result,
 };
 
 pub struct MotionDetection {
     pub source: VideoCapture,
+    pub aoi: Option<Rect>,
+    pub fgmask: Mat,
     pub frame: Mat,
     pub gray_frame: Mat,
     pub prev_frame: Mat,
@@ -15,15 +22,23 @@ pub struct MotionDetection {
 }
 
 impl MotionDetection {
-    pub fn create(source: VideoCapture) -> Self {
+    pub fn create(source: VideoCapture, aoi: Option<Rect>) -> Self {
         Self {
             source,
+            aoi,
+            fgmask: Mat::default(),
             frame: Mat::default(),
             gray_frame: Mat::default(),
             prev_frame: Mat::default(),
             diff_frame: Mat::default(),
             thresh_frame: Mat::default(),
         }
+    }
+
+    pub fn substract_background(&mut self) -> Result<()> {
+        let mut background_subtractor_mog2 = create_background_subtractor_mog2(500, 16.0, false)?;
+        background_subtractor_mog2.apply(&self.frame, &mut self.fgmask, -1.0)?;
+        Ok(())
     }
 
     pub fn take_frame(&mut self) -> Result<()> {
@@ -64,10 +79,10 @@ impl MotionDetection {
         Ok(())
     }
 
-    pub fn apply_dilation(&mut self, clone: Mat) -> Result<()> {
+    pub fn apply_dilation(&mut self) -> Result<()> {
         let kernel = Mat::ones(3, 3, CV_8U)?.to_mat()?;
         imgproc::erode(
-            &clone,
+            &self.fgmask,
             &mut self.thresh_frame,
             &kernel,
             Point::new(-1, -1),
@@ -76,7 +91,7 @@ impl MotionDetection {
             Scalar::all(0.0),
         )?;
         imgproc::dilate(
-            &clone,
+            &self.fgmask,
             &mut self.thresh_frame,
             &kernel,
             Point::new(-1, -1),
